@@ -1,4 +1,5 @@
 import json
+import socket
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from io import BytesIO
 from ai_service import analyze_resume as ai_analyze_resume
@@ -9,6 +10,12 @@ app = FastAPI(title="AI Resume Analyzer API")
 @app.get("/health")
 def health_check():
     return { "status": "healthy"}
+
+@app.get("/server")
+def server():
+    return {
+        "server": socket.gethostname()
+    }
 
 @app.post("/analyze")
 async def analyze_resume(

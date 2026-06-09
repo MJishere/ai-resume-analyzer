@@ -58,6 +58,9 @@ API_URL = os.getenv(
     "http://127.0.0.1:8000"
 )
 
+# Server details
+server_info = requests.get(f"{API_URL}/server").json()
+
 uploaded_file = st.file_uploader(
     "Upload Resume (PDF)",
     type = ["pdf"]
@@ -247,6 +250,16 @@ if st.button("Analyze Resume"):
                 """,
                 unsafe_allow_html=True
             )
-
+            try:
+                server_info = requests.get(
+                    f"{API_URL}/server"
+                ).json()
+            
+                st.caption(
+                    f"Served by: {server_info['server']}"
+                )
+            except:
+                pass
+            
     else:
         st.error(response.text)       
