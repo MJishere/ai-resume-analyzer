@@ -1,0 +1,19 @@
+.stAppDeployButton {
+    visibility: hidden !important;
+}
+
+#MainMenu {
+    visibility: hidden !important;
+}
+
+header {
+    visibility: hidden !important;
+}
+
+footer {
+    visibility: hidden !important;
+}
+
+.block-container {
+    padding-top: 0.5rem !important;
+}
