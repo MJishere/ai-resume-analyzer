@@ -74,6 +74,10 @@ resource "aws_instance" "jenkins_server" {
   vpc_security_group_ids = [aws_security_group.jenkins-sg.id]
 
   iam_instance_profile = aws_iam_instance_profile.jenkins_profile.name
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
   tags = {
     Name = "jenkins_server"
   }
@@ -95,3 +99,6 @@ resource "aws_volume_attachment" "jenkins_data_attach" {
   instance_id = aws_instance.jenkins_server.id
 }
 
+resource "aws_eip" "jenkins_eip" {
+  instance = aws_instance.jenkins_server.id
+}

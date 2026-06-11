@@ -6,8 +6,8 @@ output "public_dns" {
   value = aws_instance.jenkins_server.public_dns
 }
 
-output "instance_id" {
-  value = aws_instance.jenkins_server.id
+output "public_eip" {
+  value = aws_eip.jenkins_eip.public_ip
 }
 
 output "ebs_volume_id" {
