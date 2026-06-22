@@ -1,12 +1,41 @@
-.env
-*.env
+# Python
 __pycache__/
 *.pyc
-
+*.pyo
+*.pyd
 .venv/
 venv/
 
-.idea/
-.vscode/
+# Environment Variables
+.env
+.env.*
 
+# IDE
+.vscode/
+.idea/
+
+# OS Files
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+plan.out
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+
+# Ansible
+*.retry

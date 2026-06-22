@@ -36,7 +36,7 @@ resource "aws_security_group" "jenkins-sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-    name = "jenkins-sg"
+    Name = "jenkins-sg"
   }
 }
 
@@ -74,8 +74,11 @@ resource "aws_instance" "jenkins_server" {
   vpc_security_group_ids = [aws_security_group.jenkins-sg.id]
 
   iam_instance_profile = aws_iam_instance_profile.jenkins_profile.name
+
+  user_data = templatefile("${path.module}/user-data.tpl", {})
+
   root_block_device {
-    volume_size = 20
+    volume_size = 40
     volume_type = "gp3"
   }
   tags = {
@@ -83,22 +86,7 @@ resource "aws_instance" "jenkins_server" {
   }
 }
 
-# Volume for jenkins ec2 to store data
-resource "aws_ebs_volume" "jenkins_data" {
-  availability_zone = aws_instance.jenkins_server.availability_zone
-  size              = 20
-  type              = "gp3"
-  tags = {
-    Name = "jenkins-data"
-  }
-}
-
-resource "aws_volume_attachment" "jenkins_data_attach" {
-  device_name = "/dev/sdf"
-  volume_id   = aws_ebs_volume.jenkins_data.id
-  instance_id = aws_instance.jenkins_server.id
-}
-
 resource "aws_eip" "jenkins_eip" {
-  instance = aws_instance.jenkins_server.id
+  instance   = aws_instance.jenkins_server.id
+  depends_on = [aws_instance.jenkins_server]
 }
