@@ -35,3 +35,13 @@ module "ecr" {
   project_name = "ai-resume-analyzer"
 }
 
+# EKS Cluster
+
+module "eks" {
+  source = "./modules/eks"
+
+  project_name            = "ai-resume-analyzer"
+  private_subnet_ids      = module.vpc.private_subnet_ids
+  eks_cluster_role_arn    = module.iam.eks_cluster_role_arn
+  eks_node_group_role_arn = module.iam.eks_node_group_role_arn
+}
