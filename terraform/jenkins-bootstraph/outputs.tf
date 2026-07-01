@@ -21,14 +21,3 @@ output "terraform_state_lock_table_name" {
   description = "DynamoDB table used for Terraform state locking"
   value       = aws_dynamodb_table.terraform_state_lock.name
 }
-
-
-# ECR outputs
-
-output "backend_repository_url" {
-  value = module.ecr.backend_repository_url
-}
-
-output "frontend_repository_url" {
-  value = module.ecr.frontend_repository_url
-}

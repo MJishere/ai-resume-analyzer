@@ -57,6 +57,14 @@ resource "aws_iam_role" "jenkins_role" {
   })
 }
 
+# Temporary Amdin access for the ec2, need to be updated with least prvilage principle later
+
+resource "aws_iam_role_policy_attachment" "administrator_access" {
+  role       = aws_iam_role.jenkins_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# SSM access
 resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.jenkins_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
