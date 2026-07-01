@@ -1,0 +1,75 @@
+pipeline{
+    agent any
+
+    stages{
+        stage("Checkout"){
+            steps{
+                checkout scm
+            }
+        }
+
+        stage('AWS Identity') {
+            steps {
+                sh 'aws sts get-caller-identity'
+            }
+        }
+        
+        stage("Terraform Init"){
+            steps{
+                dir('terraform/infra') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage("Terraform Format Check"){
+            steps{
+                dir('terraform/infra'){
+                    sh 'terraform fmt -check -recursive'
+                }
+            }
+        }
+
+        stage("Terraform Validate"){
+            steps{
+                dir('terraform/infra'){
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage("Terraform Plan"){
+            steps{
+                dir("terraform/infra"){
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+
+        stage("Approval"){
+            steps{
+                input message: 'Apply Terraform Infrastructure?', ok: 'Apply'
+            }
+        }
+
+        stage("Terraform Apply"){
+            steps{
+                dir('terraform/infra'){
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "Infrastructure Provisioned Succesfully :)"
+        }
+        failure{
+            echo "Infrastructure Provisioning failed :("
+        }
+        always{
+            cleanWs()
+        }
+    }
+}

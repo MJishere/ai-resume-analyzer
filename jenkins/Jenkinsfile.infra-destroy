@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('AWS Identity') {
+            steps {
+                sh 'aws sts get-caller-identity'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('terraform/infra') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir('terraform/infra') {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Destroy Plan') {
+            steps {
+                dir('terraform/infra') {
+                    sh 'terraform plan -destroy -out=tfdestroy'
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                input message: 'Destroy Terraform Infrastructure?', ok: 'Destroy'
+            }
+        }
+
+        stage('Terraform Destroy') {
+            steps {
+                dir('terraform/infra') {
+                    sh 'terraform apply -auto-approve tfdestroy'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Infrastructure destroyed successfully.'
+        }
+
+        failure {
+            echo 'Infrastructure destroy failed.'
+        }
+
+        always {
+            cleanWs()
+        }
+    }
+}
