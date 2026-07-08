@@ -31,7 +31,7 @@ spec:
             - name: OPENAI_MODEL
               valueFrom:
                 configMapKeyRef:
-                  name: backend-config
+                  name: ai-resume-analyzer-config
                   key: OPENAI_MODEL
 
             - name: OPENAI_API_KEY

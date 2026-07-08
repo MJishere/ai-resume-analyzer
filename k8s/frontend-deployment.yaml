@@ -29,7 +29,7 @@ spec:
           - name: API_URL
             valueFrom:
               configMapKeyRef:
-                name: app-config
+                name: ai-resume-analyzer-config
                 key: API_URL
 
         readinessProbe:
