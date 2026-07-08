@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ai-resume-analyzer
+  labels:
+    app: backend 
+  
+spec:
+  replicas: 2
+
+  selector: 
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+    
+    spec:
+      containers:
+        - name: backend
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/ai-resume-analyzer-backend:IMAGE_TAG
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8000
+
+          env:
+            - name: OPENAI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: OPENAI_MODEL
+
+            - name: OPENAI_API_KEY
+              valueFrome:
+                secretKeyRef:
+                  name: backend-secret
+                  key: OPENAI_API_KEY
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe: 
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

@@ -1,0 +1,170 @@
+pipeline{
+    agent any
+
+    environment{
+        AWS_REGION = "us-east-1"
+
+        EKS_CLUSTER = "ai-resume-analyzer-eks-cluster"
+
+        ECR_BACKEND = "ai-resume-analyzer-backend"
+        ECR_FRONTEND = "ai-resume-analyzer-frontend"
+
+        K8S_NAMESPACE = "ai-resume-analyzer"
+
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages{
+        stage("Checkout"){
+            steps{
+                checkout scm
+            }
+        }
+
+        stage("AWS Identity"){
+            steps{
+                script{
+                    env.AWS_ACCOUNT_ID = sh(
+                        script: "aws sts get-caller-identity --query Account --output text",
+                        returnStdout: true
+                    ).trim()
+
+                    sh "aws sts get-caller-identity"
+
+                    echo "AWS Account Id: ${env.AWS_ACCOUNT_ID}"
+                }
+            }
+        }
+
+        stage("Login to Amazon ECR"){
+            steps{
+                sh """
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login \
+                        --username AWS \
+                        --password-stdin \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                """
+            }
+        }
+        stage("Build Backend Image"){
+            steps{
+                sh """
+                    docker build \
+                        -t ${ECR_BACKEND}:${IMAGE_TAG} \
+                        app/backend
+                """
+            }
+        }
+
+        stage("Build Frontend Image"){
+            steps{
+                sh """
+                    docker build \
+                        -t ${ECR_FRONTEND}:${IMAGE_TAG} \
+                        app/frontend
+                """
+            }
+        }
+
+        stage("Push Backend to ECR"){
+            steps{
+                sh """
+                    docker tag \
+                        ${ECR_BACKEND}:${IMAGE_TAG} \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND}:${IMAGE_TAG}
+
+                    docker push \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage("Push Frontend to ECR"){
+            steps{
+                sh """
+                    docker tag \
+                        ${ECR_FRONTEND}:${IMAGE_TAG} \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_FRONTEND}:${IMAGE_TAG}
+
+                    docker push \
+                        ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_FRONTEND}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage("Configure kubectl"){
+            steps{
+                sh """
+                    aws eks update-kubeconfig \
+                        --region ${AWS_REGION} \
+                        --name ${EKS_CLUSTER}
+
+                    kubectl get nodes
+                """
+            }
+        }
+
+        stage("Create Kubernetes Secret"){
+            steps{
+                withCredentials([
+                    string(credentialsId: 'openai_api_key', variable: 'OPENAI_API_KEY')
+                ]){
+                    sh """
+                        kubectl create secret generic ai-resume-analyzer-secret \
+                            --from-literal=OPENAI_API_KEY="$OPENAI_API_KEY" \
+                            --namespace ${K8S_NAMESPACE} \
+                            --dry-run=client -o yaml | kubectl apply -f -
+                    """
+                }
+            }
+        }
+
+        stage("Deploy kubernetes Resources"){
+            steps{
+                sh """
+                    kubectl apply -f k8s/namespace.yaml
+                    kubectl apply -f k8s/configmap.yaml
+
+                    kubectl apply -f k8s/backend-deployment.yaml
+                    kubectl apply -f k8s/backend-service.yaml
+
+                    kubectl apply -f k8s/frontend-deployment.yaml
+                    kubectl apply -f k8s/frontend-service.yaml
+                """
+            }
+        }
+
+        stage("Update Images"){
+            steps{
+                sh """
+                    kubectl set image deployment/backend \
+                        backend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND}:${IMAGE_TAG}
+                        -n ${K8S_NAMESPACE}
+
+                    kubectl set image deployment/frontend \
+                        frontend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_FRONTEND}:${IMAGE_TAG}
+                        -n ${K8S_NAMESPACE}
+                """
+            }
+        }
+
+        stage("Verify Rollout"){
+            steps{
+                sh """
+                    kubectl rollout status deployment/backend -n ${K8S_NAMESPACE}
+                    kubectl rollout status deployment/frontend -n ${K8S_NAMESPACE}
+                """
+            }
+        }
+
+        stage("Cleanup"){
+            steps{
+                sh """
+                    docker image prune -af
+                """
+            }
+        }
+
+    }
+}
