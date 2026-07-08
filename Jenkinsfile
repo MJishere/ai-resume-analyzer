@@ -15,6 +15,12 @@ pipeline{
     }
 
     stages{
+
+        stage("Clean Workspace") {
+            steps {
+                cleanWs()
+            }
+        }
         stage("Checkout"){
             steps{
                 checkout scm
@@ -105,6 +111,14 @@ pipeline{
             }
         }
 
+        stage("Create Namespace") {
+            steps {
+                sh """
+                    kubectl apply -f k8s/namespace.yaml
+                """
+            }
+        }
+
         stage("Create Kubernetes Secret"){
             steps{
                 withCredentials([
@@ -123,7 +137,6 @@ pipeline{
         stage("Deploy kubernetes Resources"){
             steps{
                 sh """
-                    kubectl apply -f k8s/namespace.yaml
                     kubectl apply -f k8s/configmap.yaml
 
                     kubectl apply -f k8s/backend-deployment.yaml
@@ -139,11 +152,11 @@ pipeline{
             steps{
                 sh """
                     kubectl set image deployment/backend \
-                        backend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND}:${IMAGE_TAG}
+                        backend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND}:${IMAGE_TAG} \
                         -n ${K8S_NAMESPACE}
 
                     kubectl set image deployment/frontend \
-                        frontend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_FRONTEND}:${IMAGE_TAG}
+                        frontend=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_FRONTEND}:${IMAGE_TAG} \
                         -n ${K8S_NAMESPACE}
                 """
             }

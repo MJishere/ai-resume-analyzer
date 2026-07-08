@@ -136,6 +136,7 @@ terraform version
 aws --version
 kubectl version --client
 docker --version
+docker restart jenkins
 '
 
 echo "Bootstrap completed successfully."

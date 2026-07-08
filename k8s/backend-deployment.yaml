@@ -35,7 +35,7 @@ spec:
                   key: OPENAI_MODEL
 
             - name: OPENAI_API_KEY
-              valueFrome:
+              valueFrom:
                 secretKeyRef:
                   name: backend-secret
                   key: OPENAI_API_KEY
