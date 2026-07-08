@@ -37,7 +37,7 @@ spec:
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: backend-secret
+                  name: ai-resume-analyzer-secret
                   key: OPENAI_API_KEY
           
           readinessProbe:
