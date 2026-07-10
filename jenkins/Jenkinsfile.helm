@@ -1,0 +1,43 @@
+pipeline{
+    agent any
+
+    environment{
+        AWS_REGION = "us-east-1"
+        EKS_CLUSTER = "ai-resume-analyzer-eks-cluster"
+    }
+
+    stages{
+        stage("Checkout SCM"){
+            steps{
+                checkout scm
+            }
+        }
+        stage("Configure EKS Cluster"){
+            steps{
+                sh """
+                    aws eks update-kubeconfig \
+                        --region ${AWS_REGION} \
+                        --name ${EKS_CLUSTER}
+                """
+            }
+
+        }
+        stage("Verify Cluster"){
+            steps{
+                sh """
+                    kubectl get nodes
+                    kubectl get ns
+                """
+            }
+        }
+        stage("Setup Helm"){
+            steps{
+                sh """
+                    helm repo add eks https://aws.github.io/eks-charts || true
+                    helm repo update
+                    helm search repo aws-load-balancer-controller
+                """
+            }
+        }
+    }
+}
