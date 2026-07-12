@@ -46,27 +46,8 @@ pipeline {
         stage("Install AWS Load Balancer Controller") {
             steps {
                 sh '''
-                    VPC_ID=$(aws eks describe-cluster \
-                        --name ${EKS_CLUSTER} \
-                        --region ${AWS_REGION} \
-                        --query "cluster.resourcesVpcConfig.vpcId" \
-                        --output text)
-
-                    ACCOUNT_ID=$(aws sts get-caller-identity \
-                        --query Account \
-                        --output text)
-
-                    helm upgrade --install aws-load-balancer-controller \
-                        eks/aws-load-balancer-controller \
-                        --namespace kube-system \
-                        --create-namespace \
-                        --wait \
-                        --set clusterName=${EKS_CLUSTER} \
-                        --set region=${AWS_REGION} \
-                        --set vpcId=${VPC_ID} \
-                        --set serviceAccount.create=true \
-                        --set serviceAccount.name=aws-load-balancer-controller \
-                        --set-string 'serviceAccount.annotations.eks\.amazonaws\.com/role-arn=arn:aws:iam::'"${ACCOUNT_ID}"':role/ai-resume-analyzer-aws-load-balancer-controller-role'
+                    chmod +x scripts/install-alb-controller.sh
+                    ./scripts/install-alb-controller.sh
                 '''
             }
         }
