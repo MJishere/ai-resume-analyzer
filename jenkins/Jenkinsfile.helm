@@ -12,7 +12,7 @@ pipeline {
                 cleanWs()
             }
         }
-        
+
         stage("Checkout SCM") {
             steps {
                 checkout scm
@@ -42,7 +42,6 @@ pipeline {
             steps {
                 sh """
                     helm repo add eks https://aws.github.io/eks-charts || true
-                    helm repo update
                     helm search repo aws-load-balancer-controller
                 """
             }
@@ -69,6 +68,23 @@ pipeline {
 
                     kubectl get serviceaccount aws-load-balancer-controller \
                         -n kube-system
+                """
+            }
+        }
+        stage("Install Metrics Server"){
+            steps{
+                sh """
+                    chmod +x scripts/install-metrics-server.sh
+                    ./scripts/install-metrics-server.sh
+                """
+            }
+        }
+
+        stage("Install kube-prometheus-stack"){
+            steps{
+                sh """
+                    chmod +x scripts/install-prometheus.sh
+                    ./scripts/install-prometheus.sh
                 """
             }
         }
