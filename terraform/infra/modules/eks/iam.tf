@@ -18,9 +18,9 @@ resource "aws_iam_openid_connect_provider" "eks" {
 
 # Iam policy
 resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name = "${var.project_name}-aws-load-balancer-controller-policy"
+  name        = "${var.project_name}-aws-load-balancer-controller-policy"
   description = "Iam policy for aws load balancer controller"
-  
+
   policy = file("${path.module}/policies/aws-load-balancer-controller-policy.json")
 }
 
