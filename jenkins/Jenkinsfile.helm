@@ -7,7 +7,12 @@ pipeline {
     }
 
     stages {
-
+        stage("Clean Workspace") {
+            steps {
+                cleanWs()
+            }
+        }
+        
         stage("Checkout SCM") {
             steps {
                 checkout scm
@@ -59,8 +64,6 @@ pipeline {
 
                     kubectl rollout status deployment/aws-load-balancer-controller \
                         -n kube-system
-
-                    kubectl get deployment -n kube-system
 
                     kubectl get pods -n kube-system
 
