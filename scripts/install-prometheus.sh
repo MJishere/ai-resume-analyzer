@@ -25,13 +25,6 @@ echo "Verifying kube-prometheus-stack..."
 
 helm status kube-prometheus-stack -n monitoring
 
-kubectl wait \
-  --for=condition=Ready \
-  pod \
-  --all \
-  -n monitoring \
-  --timeout=600s
-
 kubectl get pods -n monitoring
 
 kubectl get svc -n monitoring
