@@ -1,54 +1,92 @@
-// pipeline{
-//     agent any
+pipeline {
+    agent any
 
-//     environment{
-//         AWS_REGION = "us-east-1"
-//         EKS_CLUSTER = "ai-resume-analyzer-eks-cluster"
-//     }
+    environment {
+        AWS_REGION  = "us-east-1"
+        EKS_CLUSTER = "ai-resume-analyzer-eks-cluster"
+    }
 
-//     stages{
-//         stage("Checkout SCM"){
-//             steps{
-//                 checkout scm
-//             }
-//         }
-//         stage("Configure EKS Cluster"){
-//             steps{
-//                 sh """
-//                     aws eks update-kubeconfig \
-//                         --region ${AWS_REGION} \
-//                         --name ${EKS_CLUSTER}
-//                 """
-//             }
+    stages {
 
-//         }
-//         stage("Verify Cluster"){
-//             steps{
-//                 sh """
-//                     kubectl get nodes
-//                     kubectl get ns
-//                 """
-//             }
-//         }
-//         stage("Setup Helm"){
-//             steps{
-//                 sh """
-//                     helm repo add eks https://aws.github.io/eks-charts || true
-//                     helm repo update
-//                     helm search repo aws-load-balancer-controller
-//                 """
-//             }
-//         }
-//         stage("Verify OIDC Provider") {
-//             steps {
-//                 sh """
-//                     aws eks describe-cluster \
-//                         --name ${EKS_CLUSTER} \
-//                         --region ${AWS_REGION} \
-//                         --query "cluster.identity.oidc.issuer" \
-//                         --output text
-//                 """
-//             }
-//         }        
-//     }
-// }
+        stage("Checkout SCM") {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage("Configure EKS Cluster") {
+            steps {
+                sh """
+                    aws eks update-kubeconfig \
+                        --region ${AWS_REGION} \
+                        --name ${EKS_CLUSTER}
+                """
+            }
+        }
+
+        stage("Verify Cluster") {
+            steps {
+                sh """
+                    kubectl get nodes
+                    kubectl get ns
+                """
+            }
+        }
+
+        stage("Setup Helm") {
+            steps {
+                sh """
+                    helm repo add eks https://aws.github.io/eks-charts || true
+                    helm repo update
+                    helm search repo aws-load-balancer-controller
+                """
+            }
+        }
+
+        stage("Install AWS Load Balancer Controller") {
+            steps {
+                sh '''
+                    VPC_ID=$(aws eks describe-cluster \
+                        --name ${EKS_CLUSTER} \
+                        --region ${AWS_REGION} \
+                        --query "cluster.resourcesVpcConfig.vpcId" \
+                        --output text)
+
+                    ACCOUNT_ID=$(aws sts get-caller-identity \
+                        --query Account \
+                        --output text)
+
+                    helm upgrade --install aws-load-balancer-controller \
+                        eks/aws-load-balancer-controller \
+                        --namespace kube-system \
+                        --create-namespace \
+                        --wait \
+                        --set clusterName=${EKS_CLUSTER} \
+                        --set region=${AWS_REGION} \
+                        --set vpcId=${VPC_ID} \
+                        --set serviceAccount.create=true \
+                        --set serviceAccount.name=aws-load-balancer-controller \
+                        --set serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::${ACCOUNT_ID}:role/ai-resume-analyzer-aws-load-balancer-controller-role
+                '''
+            }
+        }
+
+        stage("Verify AWS Load Balancer Controller") {
+            steps {
+                sh """
+                    helm list -n kube-system
+
+                    kubectl rollout status deployment/aws-load-balancer-controller \
+                        -n kube-system
+
+                    kubectl get deployment -n kube-system
+
+                    kubectl get pods -n kube-system
+
+                    kubectl get serviceaccount aws-load-balancer-controller \
+                        -n kube-system
+                """
+            }
+        }
+    }
+}
