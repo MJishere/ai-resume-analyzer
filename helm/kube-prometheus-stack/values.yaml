@@ -3,6 +3,7 @@ grafana:
 
   persistence:
     enabled: true
+    storageClassName: gp3
     size: 10Gi
 
 prometheus:
@@ -12,6 +13,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
+          storageClassName: gp3
           accessModes:
             - ReadWriteOnce
 
@@ -24,6 +26,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
+          storageClassName: gp3
           accessModes:
             - ReadWriteOnce
 
