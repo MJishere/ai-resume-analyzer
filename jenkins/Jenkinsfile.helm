@@ -66,7 +66,7 @@ pipeline {
                         --set vpcId=${VPC_ID} \
                         --set serviceAccount.create=true \
                         --set serviceAccount.name=aws-load-balancer-controller \
-                        --set serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::${ACCOUNT_ID}:role/ai-resume-analyzer-aws-load-balancer-controller-role
+                        --set-string 'serviceAccount.annotations.eks\.amazonaws\.com/role-arn=arn:aws:iam::'"${ACCOUNT_ID}"':role/ai-resume-analyzer-aws-load-balancer-controller-role'
                 '''
             }
         }
