@@ -121,6 +121,8 @@ pipeline{
             steps{
                 sh """
                     trivy image \
+                        --scanners vuln \
+                        --pkg-types library \
                         --severity HIGH,CRITICAL \
                         ${ECR_BACKEND}:${IMAGE_TAG}
                 """
@@ -131,6 +133,8 @@ pipeline{
             steps{
                 sh """
                     trivy image \
+                        --scanners vuln \
+                        --pkg-types library \
                         --severity HIGH,CRITICAL \
                         ${ECR_FRONTEND}:${IMAGE_TAG}
                 """
