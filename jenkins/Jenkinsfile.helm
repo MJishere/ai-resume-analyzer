@@ -91,5 +91,22 @@ pipeline {
                 """
             }
         }
+        
+        stage("Deploying Monitoring Ingresses"){
+            steps{
+                sh """
+                    kubectl apply -f k8s/monitoring/grafana-ingress.yaml
+                    kubectl apply -f k8s/monitoring/prometheus-ingress.yaml
+                """
+            }
+        }
+        stage("Verify Monitoring Ingresses") {
+            steps {
+                sh """
+                    kubectl get ingress -n monitoring
+                    kubectl get pods -n monitoring
+                """
+            }
+        }
     }
 }
