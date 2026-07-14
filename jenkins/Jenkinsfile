@@ -48,11 +48,15 @@ pipeline{
                 """
             }
         }
-        stage("Pytest"){
-            steps{
-                sh """
-                    python3 -m pytest
-                """
+        stage("Pytest") {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'openai_api_key', variable: 'OPENAI_API_KEY')
+                ]) {
+                    sh """
+                        python3 -m pytest
+                    """
+                }
             }
         }
         stage("Dependency Scan"){
