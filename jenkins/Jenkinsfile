@@ -31,10 +31,12 @@ pipeline{
                 sh """
                     python3 -m pip install \
                         --break-system-packages \
+                        -q \
                         -r app/backend/requirements.txt
         
                     python3 -m pip install \
                         --break-system-packages \
+                        -q \
                         -r app/frontend/requirements.txt
                 """
             }
