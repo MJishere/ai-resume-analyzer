@@ -1,7 +1,8 @@
-import streamlit as st
-import requests
 import os
+
 import plotly.graph_objects as go
+import requests
+import streamlit as st
 
 with open("style.css") as f:
     st.markdown(
@@ -258,8 +259,8 @@ if st.button("Analyze Resume"):
                 st.caption(
                     f"Served by: {server_info['server']}"
                 )
-            except:
-                pass
+            except Exception:
+                st.caption("Server information unavailable.")
             
     else:
         st.error(response.text)       

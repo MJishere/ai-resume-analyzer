@@ -1,8 +1,8 @@
 import json
 import socket
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from io import BytesIO
+
 from ai_service import analyze_resume as ai_analyze_resume
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pdf_service import extract_text_from_pdf
 
 app = FastAPI(title="AI Resume Analyzer API")
