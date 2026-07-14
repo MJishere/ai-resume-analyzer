@@ -88,7 +88,8 @@ unzip \
 git \
 gnupg \
 less \
-bash
+bash \
+python3-pip
 
 # --------------------------------------------------
 # Docker CLI
@@ -117,7 +118,6 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gp
 > /etc/apt/sources.list.d/hashicorp.list
 
 apt-get update
-
 apt-get install -y terraform
 
 # --------------------------------------------------
@@ -139,6 +139,31 @@ chmod 700 get_helm.sh
 rm -f get_helm.sh
 
 # --------------------------------------------------
+# Trivy
+# --------------------------------------------------
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+| gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+> /etc/apt/sources.list.d/trivy.list
+
+apt-get update
+apt-get install -y trivy
+
+
+# --------------------------------------------------
+# Python DevOps Tools
+# --------------------------------------------------
+python3 -m pip install \
+    --break-system-packages \
+    ruff \
+    pytest \
+    pytest-mock \
+    httpx \
+    pip-audit
+
+
+# --------------------------------------------------
 # Verification
 # --------------------------------------------------
 terraform version
@@ -146,6 +171,11 @@ aws --version
 kubectl version --client
 docker --version
 helm version
+trivy --version
+
+python3 -m ruff --version
+python3 -m pytest --version
+python3 -m pip_audit --version
 '
 
 docker restart jenkins

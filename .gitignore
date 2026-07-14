@@ -39,3 +39,8 @@ crash.*.log
 
 # Ansible
 *.retry
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/

@@ -27,6 +27,28 @@ pipeline{
             }
         }
 
+        stage("Ruff"){
+            steps{
+                sh """
+                    python3 -m ruff check app
+                """
+            }
+        }
+        stage("Pytest"){
+            steps{
+                sh """
+                    python3 -m pytest
+                """
+            }
+        }
+        stage("Dependency Scan"){
+            steps{
+                sh """
+                    python3 -m pip_audit -r app/backend/requirements.txt
+                    python3 -m pip_audit -r app/frontend/requirements.txt
+                """
+            }
+        }
         stage("AWS Identity"){
             steps{
                 script{
@@ -73,6 +95,25 @@ pipeline{
             }
         }
 
+        stage("Trivy Backend"){
+            steps{
+                sh """
+                    trivy image \
+                        --severity HIGH,CRITICAL \
+                        ${ECR_BACKEND}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage("Trivy Frontend"){
+            steps{
+                sh """
+                    trivy image \
+                        --severity HIGH,CRITICAL \
+                        ${ECR_FRONTEND}:${IMAGE_TAG}
+                """
+            }
+        }
         stage("Push Backend to ECR"){
             steps{
                 sh """
@@ -176,7 +217,7 @@ pipeline{
         stage("Cleanup"){
             steps{
                 sh """
-                    docker image prune -af
+                    docker system prune -af
                 """
             }
         }
