@@ -26,7 +26,19 @@ pipeline{
                 checkout scm
             }
         }
-
+        stage("Install Python Dependencies") {
+            steps {
+                sh """
+                    python3 -m pip install \
+                        --break-system-packages \
+                        -r app/backend/requirements.txt
+        
+                    python3 -m pip install \
+                        --break-system-packages \
+                        -r app/frontend/requirements.txt
+                """
+            }
+        }
         stage("Ruff"){
             steps{
                 sh """
