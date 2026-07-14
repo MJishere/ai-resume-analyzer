@@ -89,7 +89,8 @@ git \
 gnupg \
 less \
 bash \
-python3-pip
+python3-pip \
+python3-venv
 
 # --------------------------------------------------
 # Docker CLI
