@@ -53,9 +53,13 @@ pipeline{
                 withCredentials([
                     string(credentialsId: 'openai_api_key', variable: 'OPENAI_API_KEY')
                 ]) {
-                    sh """
-                        python3 -m pytest
-                    """
+                    withEnv([
+                        'OPENAI_MODEL=gpt-5.4-nano'
+                    ]) {
+                        sh '''
+                            python3 -m pytest
+                        '''
+                    }
                 }
             }
         }
