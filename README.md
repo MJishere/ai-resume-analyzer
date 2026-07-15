@@ -121,7 +121,8 @@ This phase enables:
 
 ## Infrastructure Cleanup
 
-The infrastructure destroy pipeline (`Jenkinsfile.infra-destroy`) cleanly removes all AWS resources provisioned by Terraform when they are no longer required.# Deployment
+The infrastructure destroy pipeline (`Jenkinsfile.infra-destroy`) cleanly removes all AWS resources provisioned by Terraform when they are no longer required.
+# Deployment
 
 ## Prerequisites
 
