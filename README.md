@@ -13,6 +13,16 @@ This project demonstrates:
 - Cluster monitoring and observability using Prometheus and Grafana
 - Secure deployment using IAM Roles, private networking, Kubernetes Secrets, and container vulnerability scanning
 - AI-powered resume analysis using FastAPI, Streamlit, PDF processing, and OpenAI GPT-5.4 Nano
+# Architecture Diagram
+## Architecture Diagram - Jenkins Bootstrap
+![Architecture Diagram - Jenkins Bootstrap](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/Jenkins-bootstrap.drawio.png)
+
+## Architecture Diagram - Infrastructure & CI/CD
+![Architecture Diagram - Infrastructure & CI/CD](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/CI-CD-Infrastructure.drawio.png)
+
+## Architecture Diagram - Runtime Architecture
+![Architecture Diagram - Runtime Architecture](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/Runtime-Architecture.drawio.png)
+
 
 # Architecture Summary
 
@@ -111,17 +121,7 @@ This phase enables:
 
 ## Infrastructure Cleanup
 
-The infrastructure destroy pipeline (`Jenkinsfile.infra-destroy`) cleanly removes all AWS resources provisioned by Terraform when they are no longer required.
-# Architecture Diagram
-## Architecture Diagram - Jenkins Bootstrap
-![Architecture Diagram - Jenkins Bootstrap](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/Jenkins-bootstrap.drawio.png)
-
-## Architecture Diagram - Infrastructure & CI/CD
-![Architecture Diagram - Infrastructure & CI/CD](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/CI-CD-Infrastructure.drawio.png)
-
-## Architecture Diagram - Runtime Architecture
-![Architecture Diagram - Runtime Architecture](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/Runtime-Architecture.drawio.png)
-# Deployment
+The infrastructure destroy pipeline (`Jenkinsfile.infra-destroy`) cleanly removes all AWS resources provisioned by Terraform when they are no longer required.# Deployment
 
 ## Prerequisites
 
