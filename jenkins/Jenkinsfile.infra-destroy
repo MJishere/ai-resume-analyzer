@@ -27,9 +27,17 @@ pipeline {
         stage('Configure kubectl') {
             steps {
                 sh '''
+                if aws eks describe-cluster \
+                    --region ${AWS_REGION} \
+                    --name ${EKS_CLUSTER} >/dev/null 2>&1; then
+        
                     aws eks update-kubeconfig \
                         --region ${AWS_REGION} \
                         --name ${EKS_CLUSTER}
+        
+                else
+                    echo "EKS cluster does not exist. Skipping kubectl configuration."
+                fi
                 '''
             }
         }
