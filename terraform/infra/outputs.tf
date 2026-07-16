@@ -24,3 +24,8 @@ output "frontend_repository_url" {
   value = module.ecr.frontend_repository_url
 }
 
+# vpc outputs
+
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}

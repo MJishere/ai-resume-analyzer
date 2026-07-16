@@ -29,12 +29,11 @@ pipeline {
                 sh '''
                 if aws eks describe-cluster \
                     --region ${AWS_REGION} \
-                    --name ${EKS_CLUSTER} >/dev/null 2>&1; then
-
+                    --name ${EKS_CLUSTER} >/dev/null 2>&1
+                then
                     aws eks update-kubeconfig \
                         --region ${AWS_REGION} \
                         --name ${EKS_CLUSTER}
-
                 else
                     echo "EKS cluster does not exist. Skipping kubectl configuration."
                 fi
@@ -75,83 +74,128 @@ pipeline {
         stage('Cleanup Kubernetes Resources') {
             steps {
                 sh '''
-                set -e
-        
+                set +e
+
                 if aws eks describe-cluster \
                     --region ${AWS_REGION} \
-                    --name ${EKS_CLUSTER} >/dev/null 2>&1; then
-        
-                    echo "EKS cluster exists."
-        
+                    --name ${EKS_CLUSTER} >/dev/null 2>&1
+                then
+
+                    echo "Configuring kubectl..."
                     aws eks update-kubeconfig \
                         --region ${AWS_REGION} \
                         --name ${EKS_CLUSTER}
-        
-                    echo "Deleting ingresses..."
-                    kubectl delete ingress --all -n ai-resume-analyzer --ignore-not-found=true || true
-                    kubectl delete ingress --all -n monitoring --ignore-not-found=true || true
-        
-                    echo "Waiting for ALBs..."
-                    sleep 60
-        
+
+                    echo "Deleting application ingress..."
+                    kubectl delete ingress --all -n ai-resume-analyzer --ignore-not-found=true
+
+                    echo "Deleting monitoring ingress..."
+                    kubectl delete ingress --all -n monitoring --ignore-not-found=true
+
                     echo "Removing Helm releases..."
+
                     helm uninstall prometheus -n monitoring || true
                     helm uninstall metrics-server -n kube-system || true
                     helm uninstall aws-load-balancer-controller -n kube-system || true
-        
+
                     echo "Deleting namespaces..."
+
                     kubectl delete namespace monitoring --ignore-not-found=true || true
                     kubectl delete namespace ai-resume-analyzer --ignore-not-found=true || true
-        
+
                     kubectl wait \
                         --for=delete namespace/monitoring \
                         --timeout=300s || true
-        
+
                     kubectl wait \
                         --for=delete namespace/ai-resume-analyzer \
                         --timeout=300s || true
-        
-                    echo "Waiting for ALBs to disappear..."
-        
+
+                else
+
+                    echo "Cluster already deleted."
+
+                fi
+
+                exit 0
+                '''
+            }
+        }
+
+        stage('Wait for AWS Cleanup') {
+            steps {
+                dir('terraform/infra') {
+                    sh '''
+                    set -e
+
+                    VPC_ID=$(terraform output -raw vpc_id)
+
+                    echo "VPC: $VPC_ID"
+
+                    echo "Waiting for Application Load Balancers..."
+
                     timeout=900
                     elapsed=0
-        
+
                     while true
                     do
                         COUNT=$(aws elbv2 describe-load-balancers \
                             --region ${AWS_REGION} \
                             --query "length(LoadBalancers[?Type=='application'])" \
                             --output text)
-        
+
                         if [ "$COUNT" = "0" ]; then
-                            echo "All ALBs deleted."
+                            echo "All ALBs removed."
                             break
                         fi
-        
+
                         if [ "$elapsed" -ge "$timeout" ]; then
-                            echo "Timeout waiting for ALBs."
+                            echo "Timed out waiting for ALBs."
                             break
                         fi
-        
+
                         echo "$COUNT ALB(s) remaining..."
                         sleep 15
                         elapsed=$((elapsed+15))
                     done
-        
-                else
-        
-                    echo "EKS cluster already deleted."
-                    echo "Skipping Kubernetes cleanup."
-        
-                fi
-                '''
+
+                    echo "Cleaning orphaned aws-K8S ENIs..."
+
+                    while true
+                    do
+                        ENIS=$(aws ec2 describe-network-interfaces \
+                            --filters Name=vpc-id,Values=$VPC_ID Name=status,Values=available \
+                            --query "NetworkInterfaces[?starts_with(Description,'aws-K8S')].NetworkInterfaceId" \
+                            --output text)
+
+                        if [ -z "$ENIS" ] || [ "$ENIS" = "None" ]; then
+                            echo "No orphaned ENIs found."
+                            break
+                        fi
+
+                        for ENI in $ENIS
+                        do
+                            echo "Deleting ENI: $ENI"
+                            aws ec2 delete-network-interface \
+                                --network-interface-id $ENI || true
+                        done
+
+                        sleep 20
+                    done
+
+                    echo "Waiting 30 seconds for AWS cleanup..."
+                    sleep 30
+                    '''
+                }
             }
         }
 
         stage('Terraform Destroy') {
             steps {
                 dir('terraform/infra') {
-                    sh 'terraform apply -auto-approve tfdestroy'
+                    retry(3) {
+                        sh 'terraform apply -auto-approve tfdestroy'
+                    }
                 }
             }
         }
