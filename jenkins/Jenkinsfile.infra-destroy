@@ -5,6 +5,11 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        AWS_REGION  = 'us-east-1'
+        EKS_CLUSTER = 'ai-resume-analyzer-eks-cluster'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -16,6 +21,16 @@ pipeline {
         stage('AWS Identity') {
             steps {
                 sh 'aws sts get-caller-identity'
+            }
+        }
+
+        stage('Configure kubectl') {
+            steps {
+                sh '''
+                    aws eks update-kubeconfig \
+                        --region ${AWS_REGION} \
+                        --name ${EKS_CLUSTER}
+                '''
             }
         }
 
@@ -45,7 +60,80 @@ pipeline {
 
         stage('Approval') {
             steps {
-                input message: 'Destroy Terraform Infrastructure?', ok: 'Destroy'
+                input message: 'Destroy all AWS infrastructure?', ok: 'Destroy'
+            }
+        }
+
+        stage('Cleanup Kubernetes Resources') {
+            steps {
+                sh '''
+                    set -eux
+
+                    echo "Deleting Application Ingress..."
+                    kubectl delete ingress --all -n ai-resume-analyzer --ignore-not-found=true
+
+                    echo "Deleting Monitoring Ingress..."
+                    kubectl delete ingress --all -n monitoring --ignore-not-found=true
+
+                    echo "Waiting for ALBs to begin deletion..."
+                    sleep 60
+
+                    echo "Uninstalling Helm Releases..."
+
+                    helm uninstall prometheus \
+                        -n monitoring || true
+
+                    helm uninstall metrics-server \
+                        -n kube-system || true
+
+                    helm uninstall aws-load-balancer-controller \
+                        -n kube-system || true
+
+                    echo "Deleting Namespaces..."
+
+                    kubectl delete namespace monitoring \
+                        --ignore-not-found=true
+
+                    kubectl delete namespace ai-resume-analyzer \
+                        --ignore-not-found=true
+
+                    echo "Waiting for namespaces..."
+
+                    kubectl wait \
+                        --for=delete namespace/monitoring \
+                        --timeout=300s || true
+
+                    kubectl wait \
+                        --for=delete namespace/ai-resume-analyzer \
+                        --timeout=300s || true
+
+                    echo "Waiting for AWS Load Balancers..."
+
+                    timeout=900
+                    elapsed=0
+
+                    while true
+                    do
+                        COUNT=$(aws elbv2 describe-load-balancers \
+                            --region ${AWS_REGION} \
+                            --query "length(LoadBalancers[?Type=='application'])" \
+                            --output text)
+
+                        if [ "$COUNT" = "0" ]; then
+                            echo "All Application Load Balancers deleted."
+                            break
+                        fi
+
+                        if [ "$elapsed" -ge "$timeout" ]; then
+                            echo "Timed out waiting for ALBs."
+                            exit 1
+                        fi
+
+                        echo "$COUNT ALB(s) remaining..."
+                        sleep 15
+                        elapsed=$((elapsed+15))
+                    done
+                '''
             }
         }
 
@@ -59,6 +147,7 @@ pipeline {
     }
 
     post {
+
         success {
             echo 'Infrastructure destroyed successfully.'
         }
