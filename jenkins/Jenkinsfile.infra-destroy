@@ -30,11 +30,11 @@ pipeline {
                 if aws eks describe-cluster \
                     --region ${AWS_REGION} \
                     --name ${EKS_CLUSTER} >/dev/null 2>&1; then
-        
+
                     aws eks update-kubeconfig \
                         --region ${AWS_REGION} \
                         --name ${EKS_CLUSTER}
-        
+
                 else
                     echo "EKS cluster does not exist. Skipping kubectl configuration."
                 fi
@@ -75,72 +75,75 @@ pipeline {
         stage('Cleanup Kubernetes Resources') {
             steps {
                 sh '''
-                    set -eux
-
-                    echo "Deleting Application Ingress..."
-                    kubectl delete ingress --all -n ai-resume-analyzer --ignore-not-found=true
-
-                    echo "Deleting Monitoring Ingress..."
-                    kubectl delete ingress --all -n monitoring --ignore-not-found=true
-
-                    echo "Waiting for ALBs to begin deletion..."
+                set -e
+        
+                if aws eks describe-cluster \
+                    --region ${AWS_REGION} \
+                    --name ${EKS_CLUSTER} >/dev/null 2>&1; then
+        
+                    echo "EKS cluster exists."
+        
+                    aws eks update-kubeconfig \
+                        --region ${AWS_REGION} \
+                        --name ${EKS_CLUSTER}
+        
+                    echo "Deleting ingresses..."
+                    kubectl delete ingress --all -n ai-resume-analyzer --ignore-not-found=true || true
+                    kubectl delete ingress --all -n monitoring --ignore-not-found=true || true
+        
+                    echo "Waiting for ALBs..."
                     sleep 60
-
-                    echo "Uninstalling Helm Releases..."
-
-                    helm uninstall prometheus \
-                        -n monitoring || true
-
-                    helm uninstall metrics-server \
-                        -n kube-system || true
-
-                    helm uninstall aws-load-balancer-controller \
-                        -n kube-system || true
-
-                    echo "Deleting Namespaces..."
-
-                    kubectl delete namespace monitoring \
-                        --ignore-not-found=true
-
-                    kubectl delete namespace ai-resume-analyzer \
-                        --ignore-not-found=true
-
-                    echo "Waiting for namespaces..."
-
+        
+                    echo "Removing Helm releases..."
+                    helm uninstall prometheus -n monitoring || true
+                    helm uninstall metrics-server -n kube-system || true
+                    helm uninstall aws-load-balancer-controller -n kube-system || true
+        
+                    echo "Deleting namespaces..."
+                    kubectl delete namespace monitoring --ignore-not-found=true || true
+                    kubectl delete namespace ai-resume-analyzer --ignore-not-found=true || true
+        
                     kubectl wait \
                         --for=delete namespace/monitoring \
                         --timeout=300s || true
-
+        
                     kubectl wait \
                         --for=delete namespace/ai-resume-analyzer \
                         --timeout=300s || true
-
-                    echo "Waiting for AWS Load Balancers..."
-
+        
+                    echo "Waiting for ALBs to disappear..."
+        
                     timeout=900
                     elapsed=0
-
+        
                     while true
                     do
                         COUNT=$(aws elbv2 describe-load-balancers \
                             --region ${AWS_REGION} \
                             --query "length(LoadBalancers[?Type=='application'])" \
                             --output text)
-
+        
                         if [ "$COUNT" = "0" ]; then
-                            echo "All Application Load Balancers deleted."
+                            echo "All ALBs deleted."
                             break
                         fi
-
+        
                         if [ "$elapsed" -ge "$timeout" ]; then
-                            echo "Timed out waiting for ALBs."
-                            exit 1
+                            echo "Timeout waiting for ALBs."
+                            break
                         fi
-
+        
                         echo "$COUNT ALB(s) remaining..."
                         sleep 15
                         elapsed=$((elapsed+15))
                     done
+        
+                else
+        
+                    echo "EKS cluster already deleted."
+                    echo "Skipping Kubernetes cleanup."
+        
+                fi
                 '''
             }
         }
