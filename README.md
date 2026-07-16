@@ -23,6 +23,58 @@ This project demonstrates:
 ## Architecture Diagram - Runtime Architecture
 ![Architecture Diagram - Runtime Architecture](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/images/Architecture/Runtime-Architecture.drawio.png)
 
+# Screenshots
+
+## 🖥️ Application
+
+### Home Page
+![Application Home Page](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Application-HomePage.png)
+
+### Resume Analysis Results
+![Resume Analysis Results](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Resume-Analysis.png)
+
+### Application Load Balancers
+![Application Load Balancers](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Application-LoadBalancers.png)
+
+---
+
+## 🚀 CI/CD Pipelines
+
+### Terraform AWS Infrastructure Provisioning Pipeline
+![Terraform AWS Infrastructure Provisioning Pipeline](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Terraform-AWS-Infra-Provision-Pipeline.png)
+
+### Application CI/CD Pipeline
+![Application CI/CD Pipeline](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/CI-CD-Pipeline.png)
+
+### Helm Cluster Setup Pipeline
+![Helm Cluster Setup Pipeline](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Helm-Cluster-Setup-Pipeline.png)
+
+---
+
+## ☸️ Kubernetes
+
+### Amazon EKS Cluster
+![Amazon EKS Cluster](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/EKS-Cluster-Console.png)
+
+### Running Kubernetes Resources
+![Running Kubernetes Resources](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Kubernetes-Resources.png)
+
+---
+
+## 📊 Monitoring
+
+### Grafana Dashboard
+![Grafana Dashboard](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Grafana-Dashboards.png)
+
+### Prometheus Dashboard
+![Prometheus Dashboard](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Prometheus-Dashboard.png)
+
+---
+
+## ⚙️ Jenkins
+
+### Jenkins Server
+![Jenkins Server](https://raw.githubusercontent.com/MJishere/ai-resume-analyzer/main/docs/screenshots/Jenkins-Server.png)
 
 # Architecture Summary
 
@@ -225,149 +277,6 @@ The following credentials must be configured in Jenkins before executing the pip
 > **Note**
 >
 > The OpenAI API key is **not stored in the repository**. During the application deployment pipeline, Jenkins securely creates a Kubernetes Secret from the configured Jenkins credential.
-# CI/CD Pipelines
-The project uses **four independent Jenkins pipelines** to separate infrastructure provisioning, cluster setup, application deployment, and infrastructure cleanup.
-
-| Pipeline | Purpose |
-|----------|---------|
-| **Jenkinsfile.infra** | Provisions AWS infrastructure using Terraform |
-| **Jenkinsfile.helm** | Installs Kubernetes add-ons using Helm and shell scripts |
-| **Jenkinsfile** | Builds, tests, scans, and deploys the application |
-| **Jenkinsfile.infra-destroy** | Destroys all infrastructure provisioned by Terraform |
-
----
-
-## Infrastructure Pipeline (`Jenkinsfile.infra`)
-
-Responsible for provisioning the AWS infrastructure using modular Terraform.
-
-Creates:
-
-- VPC
-- Public & Private Subnets
-- Internet Gateway
-- NAT Gateway
-- Route Tables
-- IAM Roles & Policies
-- Amazon ECR Repositories
-- Amazon EKS Cluster
-- Managed Node Group
-
----
-
-## Helm Pipeline (`Jenkinsfile.helm`)
-
-Prepares the Kubernetes cluster after the infrastructure is provisioned.
-
-Installs:
-
-- AWS Load Balancer Controller
-- Metrics Server
-- kube-prometheus-stack
-    - Prometheus
-    - Grafana
-
----
-
-## Application Pipeline (`Jenkinsfile`)
-
-Automates the complete CI/CD workflow.
-
-Pipeline stages:
-
-- Checkout Source Code
-- Install Dependencies
-- Ruff Linting
-- Pytest
-- Trivy Filesystem Scan
-- Build Backend Docker Image
-- Build Frontend Docker Image
-- Trivy Image Scan
-- Push Images to Amazon ECR
-- Create Kubernetes Secret for OpenAI API Key
-- Deploy Application to Amazon EKS
-
----
-
-## Infrastructure Cleanup Pipeline (`Jenkinsfile.infra-destroy`)
-
-Safely removes all AWS resources created by Terraform to avoid unnecessary cloud costs.
-
-# Testing
-
-## Unit Tests
-
-The project includes automated testing as part of the CI/CD pipeline.
-
-- Unit tests implemented using **Pytest**
-- Tests are executed automatically during the application deployment pipeline
-- Deployment proceeds only after successful test execution
-
-Run the tests locally:
-
-```bash
-pytest
-```
-## Code Quality
-
-Code quality is enforced using **Ruff**, which performs static analysis and linting during the CI/CD pipeline.
-
-Run locally:
-
-```bash
-ruff check .
-```
-
-# Security Scanning
-
-The project integrates **Trivy** into the CI/CD pipeline to identify security vulnerabilities before deployment.
-
-Scans performed:
-
-- Docker image vulnerability scan
-
-This helps ensure only scanned container images are deployed to the Kubernetes cluster.
-
-# Kubernetes Deployment
-
-The application is deployed on **Amazon EKS** using Kubernetes manifests.
-
-## Components
-
-- Namespace
-- Deployments
-- Services
-- ConfigMaps
-- Secrets
-- Ingress
-
-## Application Configuration
-
-Configuration is managed using Kubernetes ConfigMaps.
-
-Examples include:
-
-- OpenAI Model
-- Backend API URL
-
-Sensitive information is managed separately using Kubernetes Secrets.
-
-The OpenAI API Key is injected automatically by the Jenkins deployment pipeline using Jenkins Credentials.
-
-## High Availability
-
-Both services are deployed with two replicas.
-
-| Component | Replicas |
-|----------|----------|
-| Backend | 2 |
-| Frontend | 2 |
-
-The Amazon EKS managed node group is configured with:
-
-- Desired Capacity: 2
-- Minimum Capacity: 2
-- Maximum Capacity: 2
 
 # Monitoring
 
@@ -388,26 +297,6 @@ The stack provides visibility into:
 - CPU Utilization
 - Memory Utilization
 - Cluster Health
-
-# Security
-
-The project follows several DevSecOps best practices.
-
-- Trivy container image scanning before deployment
-- OpenAI API Key managed through Jenkins Credentials
-- Kubernetes Secrets for sensitive configuration
-- IAM Roles with least privilege
-- Private networking for Amazon EKS worker nodes
-- Terraform remote state locking using Amazon S3 and DynamoDB
-
-# API Overview
-
-The backend is implemented using **FastAPI**.
-
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/health` | Health check endpoint |
-| POST | `/analyze` | Analyze uploaded resume |
 
 # Application Features
 
